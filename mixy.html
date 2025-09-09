@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Free Fire Diamond Shop</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Orbitron:wght@600;700&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #0a0a2a;
+            --secondary: #141445;
+            --accent: #00c8ff;
+            --accent-glow: 0 0 10px #00c8ff, 0 0 20px #00c8ff, 0 0 30px #00c8ff;
+            --text: #ffffff;
+            --gold: #ffb700;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: var(--primary);
+            color: var(--text);
+            overflow-x: hidden;
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(20, 20, 69, 0.5) 0%, transparent 20%),
+                radial-gradient(circle at 90% 60%, rgba(0, 200, 255, 0.3) 0%, transparent 25%);
+        }
+
+        /* Snowflake Animation */
+        .snowflakes {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .snowflake {
+            position: absolute;
+            color: var(--accent);
+            font-size: 16px;
+            animation: fall linear infinite;
+            opacity: 0.7;
+        }
+
+        @keyframes fall {
+            to {
+                transform: translateY(105vh) rotate(360deg);
+            }
+        }
+
+        /* Landing Page */
+        #landing-page {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            z-index: 1000;
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .logo h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem; /* Smaller for mobile */
+            font-weight: 700;
+            background: linear-gradient(45deg, var(--accent), #ffffff, var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: var(--accent-glow);
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+
+        .logo p {
+            font-size: 1rem; /* Smaller for mobile */
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .get-start-btn {
+            padding: 12px 30px;
+            font-size: 1rem;
+            font-weight: 600;
+            background: linear-gradient(45deg, var(--accent), #0066ff);
+            border: none;
+            border-radius: 50px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px rgba(0, 200, 255, 0.5);
+            margin-top: 30px;
+        }
+
+        .get-start-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 20px rgba(0, 200, 255, 0.8);
+        }
+
+        /* Main Page */
+        #main-page {
+            display: none;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.4rem; /* Smaller for mobile */
+            color: var(--accent);
+            text-shadow: var(--accent-glow);
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            animation: glow 2s infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 5px var(--accent); }
+            to { text-shadow: 0 0 20px var(--accent), 0 0 30px var(--accent); }
+        }
+
+        .header h1 {
+            font-size: 2rem; /* Smaller for mobile */
+            color: var(--text);
+            margin-bottom: 20px;
+        }
+
+        .header h1 span {
+            color: var(--gold);
+        }
+
+        /* Banner */
+        .banner {
+            height: 200px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 30px;
+            position: relative;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .banner img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: opacity 0.5s ease;
+        }
+
+        /* Form */
+        .form-container {
+            background: rgba(20, 20, 69, 0.5);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.2);
+            color: var(--text);
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .description {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        /* Diamond Packs */
+        .diamond-packs {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 50px;
+        }
+
+        .pack {
+            background: linear-gradient(135deg, var(--secondary) 0%, rgba(20, 20, 69, 0.5) 100%);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .pack:hover {
+            transform: translateY(-5px);
+        }
+
+        .pack img {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+            margin-bottom: 15px;
+        }
+
+        .pack h3 {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: var(--gold);
+        }
+
+        .pack .price {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 15px;
+        }
+
+        .buy-btn {
+            padding: 10px 20px;
+            background: linear-gradient(45deg, var(--accent), #0066ff);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .buy-btn:hover {
+            background: linear-gradient(45deg, #0066ff, var(--accent));
+            box-shadow: 0 0 10px rgba(0, 200, 255, 0.5);
+        }
+
+        /* Payment Page */
+        #payment-page {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: var(--primary);
+            z-index: 1000;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .payment-container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: rgba(20, 20, 69, 0.5);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .payment-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .payment-header h2 {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--accent);
+            text-shadow: var(--accent-glow);
+            margin-bottom: 10px;
+        }
+
+        .instructions {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .instructions p {
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+
+        .instructions p:last-child {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .scanner-container {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .scanner-container img {
+            max-width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .utr-form {
+            margin-top: 30px;
+        }
+
+        .back-btn {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        /* WhatsApp Float */
+        .whatsapp-float {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            width: 60px;
+            height: 60px;
+            background: #25D366;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            z-index: 100;
+            animation: pulse 2s infinite;
+        }
+
+        .whatsapp-float i {
+            color: white;
+            font-size: 30px;
+        }
+
+        /* Popup */
+        .popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            display: none;
+        }
+
+        .popup-content {
+            background: var(--secondary);
+            padding: 40px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 400px;
+            box-shadow: 0 5px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .popup-content i {
+            font-size: 50px;
+            color: var(--accent);
+            margin-bottom: 20px;
+        }
+
+        .popup-content h3 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: var(--gold);
+        }
+
+        .popup-content p {
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .close-popup {
+            padding: 10px 20px;
+            background: var(--accent);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .logo h1 {
+                font-size: 2rem; /* Even smaller for mobile */
+            }
+            
+            /* Diamond packs will remain 2 columns on mobile */
+            .diamond-packs {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+            }
+            
+            .pack {
+                padding: 15px;
+            }
+            
+            .pack img {
+                width: 60px;
+                height: 60px;
+            }
+            
+            .pack h3 {
+                font-size: 1rem;
+            }
+            
+            .pack .price {
+                font-size: 1.2rem;
+            }
+            
+            .header h1 {
+                font-size: 1.8rem; /* Even smaller for mobile */
+            }
+            
+            .header h2 {
+                font-size: 1.2rem; /* Even smaller for mobile */
+            }
+            
+            .get-start-btn {
+                padding: 10px 25px;
+                font-size: 0.9rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .logo h1 {
+                font-size: 1.8rem; /* Even smaller for very small screens */
+            }
+            
+            /* For very small screens, keep 2 columns but adjust spacing */
+            .diamond-packs {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            
+            .pack {
+                padding: 12px;
+            }
+            
+            .pack img {
+                width: 50px;
+                height: 50px;
+                margin-bottom: 10px;
+            }
+            
+            .pack h3 {
+                font-size: 0.9rem;
+            }
+            
+            .pack .price {
+                font-size: 1rem;
+                margin-bottom: 10px;
+            }
+            
+            .buy-btn {
+                padding: 8px 12px;
+                font-size: 0.8rem;
+            }
+            
+            .header h1 {
+                font-size: 1.6rem; /* Even smaller for very small screens */
+            }
+            
+            .header h2 {
+                font-size: 1.1rem; /* Even smaller for very small screens */
+            }
+        }
+        
+        /* For extremely small screens, make it single column */
+        @media (max-width: 340px) {
+            .diamond-packs {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Snowflake Animation -->
+    <div class="snowflakes" aria-hidden="true"></div>
+    
+    <!-- Landing Page -->
+    <section id="landing-page">
+        <div class="logo">
+            <h1>Free Fire Diamond Shop</h1>
+            <p>Welcome to the ultimate Free Fire diamond store</p>
+        </div>
+        <button class="get-start-btn">Get Started</button>
+    </section>
+    
+    <!-- Main Page -->
+    <section id="main-page">
+        <div class="header">
+            <h2>ffindiamondstore.com</h2>
+            <h1>Free Fire Diamond <span>💎</span></h1>
+        </div>
+        
+        <div class="banner">
+            <img src="https://via.placeholder.com/1200x200/141445/00c8ff?text=Free+Fire+Diamonds+Sale" alt="Free Fire Diamond Sale" id="banner-img">
+        </div>
+        
+        <div class="form-container">
+            <div class="input-group">
+                <label for="game-uid">Enter Your Game UID</label>
+                <input type="text" id="game-uid" placeholder="e.g., 1234567890">
+            </div>
+            <div class="input-group">
+                <label for="confirm-uid">Confirm Your UID</label>
+                <input type="text" id="confirm-uid" placeholder="Re-enter your UID">
+            </div>
+            <p class="description">Payment success hote hi aapko 24 hours me diamond mil jayega. After successful deposit you will get diamonds in your uid within 24 hours.</p>
+        </div>
+        
+        <div class="diamond-packs" id="diamond-packs">
+            <!-- Diamond packs will be loaded from Firebase -->
+        </div>
+    </section>
+    
+    <!-- Payment Page -->
+    <section id="payment-page">
+        <div class="payment-container">
+            <div class="payment-header">
+                <h2>Complete Your Payment</h2>
+                <p>Scan the QR code and complete the transaction</p>
+            </div>
+            
+            <div class="instructions">
+                <p>Scan the QR code below to make your payment.</p>
+                <p>After successful payment, enter your UTR number in the box below.</p>
+                <p>Is Scanner par pay Karne Ke bad niche Box Mein UTR Ya transaction ID Summit karo</p>
+            </div>
+            
+            <div class="scanner-container">
+                <img src="https://via.placeholder.com/300/ffffff/000000?text=Scanner+QR+Code" alt="Payment Scanner" id="scanner-img">
+            </div>
+            
+            <div class="utr-form">
+                <div class="input-group">
+                    <label for="utr">Enter UTR / Transaction ID</label>
+                    <input type="text" id="utr" placeholder="e.g., 123456789012">
+                </div>
+                <button class="buy-btn" id="submit-utr">Submit UTR</button>
+            </div>
+            
+            <a href="#" class="back-btn" id="back-to-main"><i class="fas fa-arrow-left"></i> Back to Store</a>
+        </div>
+    </section>
+    
+    <!-- WhatsApp Float -->
+    <a href="https://wa.me/919579634598" class="whatsapp-float" target="_blank">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+    
+    <!-- Popup -->
+    <div class="popup" id="success-popup">
+        <div class="popup-content">
+            <i class="fas fa-check-circle"></i>
+            <h3>Order Submitted Successfully!</h3>
+            <p>Please wait for some time. You will receive your diamonds 💎 in your game within 24 hours.</p>
+            <button class="close-popup" id="close-popup">OK</button>
+        </div>
+    </div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBzjGWkX_JcMRmqnz1CyZ7qA_kkXiRat9Y",
+            authDomain: "diamond-dfdb2.firebaseapp.com",
+            databaseURL: "https://diamond-dfdb2-default-rtdb.firebaseio.com",
+            projectId: "diamond-dfdb2",
+            storageBucket: "diamond-dfdb2.firebasestorage.app",
+            messagingSenderId: "586233370786",
+            appId: "1:586233370786:web:ccaeb795b3f2188eef5ffb",
+            measurementId: "G-BMPLQ2VB9N"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        
+        // DOM Elements
+        const landingPage = document.getElementById('landing-page');
+        const mainPage = document.getElementById('main-page');
+        const paymentPage = document.getElementById('payment-page');
+        const getStartBtn = document.querySelector('.get-start-btn');
+        const backToMainBtn = document.getElementById('back-to-main');
+        const diamondPacksContainer = document.getElementById('diamond-packs');
+        const bannerImg = document.getElementById('banner-img');
+        const scannerImg = document.getElementById('scanner-img');
+        const submitUtrBtn = document.getElementById('submit-utr');
+        const successPopup = document.getElementById('success-popup');
+        const closePopupBtn = document.getElementById('close-popup');
+        
+        // Create snowflakes
+        function createSnowflakes() {
+            const snowflakes = document.querySelector('.snowflakes');
+            const snowflakeSymbols = ['❄', '❅', '❆', '✻', '✼', '❉'];
+            
+            for (let i = 0; i < 50; i++) {
+                const snowflake = document.createElement('div');
+                snowflake.className = 'snowflake';
+                snowflake.textContent = snowflakeSymbols[Math.floor(Math.random() * snowflakeSymbols.length)];
+                snowflake.style.left = `${Math.random() * 100}%`;
+                snowflake.style.animationDuration = `${Math.random() * 5 + 5}s`;
+                snowflake.style.opacity = Math.random();
+                snowflake.style.fontSize = `${Math.random() * 10 + 10}px`;
+                snowflakes.appendChild(snowflake);
+            }
+        }
+        
+        // Fetch data from Firebase
+        function fetchData() {
+            // Fetch banner images
+            const bannerRef = database.ref('banners');
+            bannerRef.on('value', (snapshot) => {
+                const bannersData = snapshot.val();
+                if (bannersData) {
+                    // Convert object to array
+                    const banners = Object.values(bannersData);
+                    
+                    if (banners.length > 0) {
+                        let currentBannerIndex = 0;
+                        
+                        // Set initial banner
+                        bannerImg.src = banners[0];
+                        
+                        // Rotate banners every 3 seconds
+                        setInterval(() => {
+                            currentBannerIndex = (currentBannerIndex + 1) % banners.length;
+                            bannerImg.style.opacity = 0;
+                            
+                            setTimeout(() => {
+                                bannerImg.src = banners[currentBannerIndex];
+                                bannerImg.style.opacity = 1;
+                            }, 500);
+                        }, 3000);
+                    }
+                }
+            });
+            
+            // Fetch diamond packs
+            const packsRef = database.ref('diamondPacks');
+            packsRef.on('value', (snapshot) => {
+                const packsData = snapshot.val();
+                diamondPacksContainer.innerHTML = '';
+                
+                if (packsData) {
+                    // Convert object to array
+                    const packs = Object.values(packsData);
+                    
+                    packs.forEach(pack => {
+                        const packElement = document.createElement('div');
+                        packElement.className = 'pack';
+                        packElement.innerHTML = `
+                            <img src="${pack.icon}" alt="${pack.name}" onerror="this.src='https://via.placeholder.com/80/141445/00c8ff?text=💎'">
+                            <h3>${pack.name}</h3>
+                            <div class="price">₹${pack.price}</div>
+                            <button class="buy-btn" data-pack="${pack.name}" data-price="${pack.price}">Buy Now</button>
+                        `;
+                        diamondPacksContainer.appendChild(packElement);
+                    });
+                    
+                    // Add event listeners to buy buttons
+                    document.querySelectorAll('.buy-btn').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const packName = this.getAttribute('data-pack');
+                            const packPrice = this.getAttribute('data-price');
+                            openPaymentPage(packName, packPrice);
+                        });
+                    });
+                } else {
+                    // Show placeholder if no packs available
+                    diamondPacksContainer.innerHTML = `
+                        <div class="pack">
+                            <img src="https://via.placeholder.com/80/141445/00c8ff?text=💎" alt="Diamond Pack">
+                            <h3>100 Diamonds</h3>
+                            <div class="price">₹99</div>
+                            <button class="buy-btn" data-pack="100 Diamonds" data-price="99">Buy Now</button>
+                        </div>
+                        <div class="pack">
+                            <img src="https://via.placeholder.com/80/141445/00c8ff?text=💎" alt="Diamond Pack">
+                            <h3>310 Diamonds</h3>
+                            <div class="price">₹299</div>
+                            <button class="buy-btn" data-pack="310 Diamonds" data-price="299">Buy Now</button>
+                        </div>
+                    `;
+                    
+                    // Add event listeners to placeholder buy buttons
+                    document.querySelectorAll('.buy-btn').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const packName = this.getAttribute('data-pack');
+                            const packPrice = this.getAttribute('data-price');
+                            openPaymentPage(packName, packPrice);
+                        });
+                    });
+                }
+            });
+            
+            // Fetch scanner image
+            const scannerRef = database.ref('scanner');
+            scannerRef.on('value', (snapshot) => {
+                const scanner = snapshot.val();
+                if (scanner) {
+                    scannerImg.src = scanner;
+                }
+            });
+        }
+        
+        // Open payment page
+        function openPaymentPage(packName, packPrice) {
+            const gameUid = document.getElementById('game-uid').value;
+            const confirmUid = document.getElementById('confirm-uid').value;
+            
+            if (!gameUid || !confirmUid) {
+                alert('Please enter your Game UID and confirm it before proceeding.');
+                return;
+            }
+            
+            if (gameUid !== confirmUid) {
+                alert('Game UID and Confirm UID do not match. Please check and try again.');
+                return;
+            }
+            
+            mainPage.style.display = 'none';
+            paymentPage.style.display = 'block';
+            
+            // Update payment page with pack details
+            document.querySelector('.payment-header h2').textContent = `Purchase ${packName}`;
+            document.querySelector('.payment-header p').textContent = `Amount: ₹${packPrice}`;
+        }
+        
+        // Submit UTR
+        function submitUtr() {
+            const gameUid = document.getElementById('game-uid').value;
+            const utr = document.getElementById('utr').value;
+            
+            if (!gameUid || !utr) {
+                alert('Please fill all fields');
+                return;
+            }
+            
+            // Get the selected pack details
+            const packName = document.querySelector('.payment-header h2').textContent.replace('Purchase ', '');
+            const packPrice = document.querySelector('.payment-header p').textContent.replace('Amount: ₹', '');
+            
+            // Save to Firebase
+            const ordersRef = database.ref('orders');
+            const newOrderRef = ordersRef.push();
+            newOrderRef.set({
+                gameUid: gameUid,
+                utr: utr,
+                pack: packName,
+                amount: packPrice,
+                timestamp: Date.now(),
+                status: 'pending'
+            }).then(() => {
+                // Show success popup
+                successPopup.style.display = 'flex';
+            }).catch((error) => {
+                alert('Error submitting order: ' + error.message);
+            });
+        }
+        
+        // Event Listeners
+        getStartBtn.addEventListener('click', () => {
+            landingPage.style.opacity = '0';
+            setTimeout(() => {
+                landingPage.style.display = 'none';
+                mainPage.style.display = 'block';
+            }, 500);
+        });
+        
+        backToMainBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            paymentPage.style.display = 'none';
+            mainPage.style.display = 'block';
+        });
+        
+        submitUtrBtn.addEventListener('click', submitUtr);
+        
+        closePopupBtn.addEventListener('click', () => {
+            successPopup.style.display = 'none';
+            paymentPage.style.display = 'none';
+            mainPage.style.display = 'block';
+            
+            // Clear form fields
+            document.getElementById('game-uid').value = '';
+            document.getElementById('confirm-uid').value = '';
+            document.getElementById('utr').value = '';
+        });
+        
+        // Initialize
+        window.onload = function() {
+            createSnowflakes();
+            fetchData();
+            
+            // Show landing page for 2 seconds then show Get Start button
+            setTimeout(() => {
+                document.querySelector('.get-start-btn').style.opacity = '1';
+            }, 2000);
+        };
+    </script>
+</body>
+</html>
